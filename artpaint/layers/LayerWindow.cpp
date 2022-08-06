@@ -309,25 +309,33 @@ LayerWindow::MessageReceived(BMessage *message)
 		case HS_LAYER_TRANSPARENCY_CHANGED:
 			if (active_layer != NULL && active_layer->IsActive()) {
 				int32 value = transparency_slider->Value();
-				active_layer->SetTransparency((float)value / 100.0f);
+				BMessage layer_op_message;
+				layer_op_message.what = message->what;
+				layer_op_message.AddInt32("layer_id", active_layer->Id());
+				layer_op_message.AddPointer("layer_pointer",(void*)active_layer);
+				layer_op_message.AddFloat("transparency", (float)value / 100.0f);
 
 				BView *image_view = (BView*)active_layer->GetImageView();
 				BWindow *image_window = image_view->Window();
 
 				if (image_window && active_layer->IsActive())
-					image_window->PostMessage(message, image_view);
+					image_window->PostMessage(&layer_op_message, image_view);
 			} break;
 		case HS_LAYER_BLEND_MODE_CHANGED:
 			if (active_layer != NULL && active_layer->IsActive()) {
 				uint8 mode;
 				if(message->FindUInt8("blend_mode", &mode) == B_OK) {
-					active_layer->SetBlendMode(mode);
+					BMessage layer_op_message;
+					layer_op_message.what = message->what;
+					layer_op_message.AddInt32("layer_id", active_layer->Id());
+					layer_op_message.AddPointer("layer_pointer",(void*)active_layer);
+					layer_op_message.AddUInt8("blend_mode", mode);
 
 					BView *image_view = (BView*)active_layer->GetImageView();
 					BWindow *image_window = image_view->Window();
 
 					if (image_window && active_layer->IsActive())
-						image_window->PostMessage(message, image_view);
+						image_window->PostMessage(&layer_op_message, image_view);
 				}
 			} break;
 		default:

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 
-UndoAction::UndoAction(int32 layer,action_type t,BRect rect)
+UndoAction::UndoAction(int32 layer, action_type t, BRect rect)
 {
 	layer_id = layer;
 	type = t;
@@ -43,7 +43,7 @@ UndoAction::UndoAction(int32 layer,action_type t,BRect rect)
 }
 
 
-UndoAction::UndoAction(int32 layer,int32 merged_layer,BRect rect)
+UndoAction::UndoAction(int32 layer, int32 merged_layer, BRect rect)
 {
 	layer_id = layer;
 	merged_layer_id = merged_layer;
@@ -65,7 +65,8 @@ UndoAction::UndoAction(int32 layer,int32 merged_layer,BRect rect)
 	size_has_changed = FALSE;
 }
 
-UndoAction::UndoAction(int32 layer,ToolScript *script,BRect rect)
+
+UndoAction::UndoAction(int32 layer, ToolScript *script, BRect rect)
 {
 	layer_id = layer;
 	type = TOOL_ACTION;
@@ -91,11 +92,15 @@ UndoAction::UndoAction(int32 layer,ToolScript *script,BRect rect)
 	else {
 		delete script;
 	}
+
+	layer_name = "";
+	visibility = false;
+	blend_mode = 0;
 }
 
 
-
-UndoAction::UndoAction(int32 layer,ManipulatorSettings *settings,BRect rect,manipulator_type t,int32 aoid)
+UndoAction::UndoAction(int32 layer, ManipulatorSettings *settings, BRect rect,
+	manipulator_type t, int32 aoid)
 {
 	layer_id = layer;
 	type = MANIPULATOR_ACTION;
@@ -119,6 +124,36 @@ UndoAction::UndoAction(int32 layer,ManipulatorSettings *settings,BRect rect,mani
 		manip_type = t;
 		add_on_id = aoid;
 	}
+
+	layer_name = "";
+	visibility = false;
+	blend_mode = 0;
+}
+
+
+UndoAction::UndoAction(int32 layer, BString name, bool visible, uint8 mode,
+		BRect rect)
+{
+	layer_id = layer;
+	type = CHANGE_LAYER_PROPERTY_ACTION;
+	if (rect.IsValid() == TRUE)
+		bounding_rect = rect;
+	else
+		type = NO_ACTION;
+
+	tool_script = NULL;
+	manipulator_settings = NULL;
+	add_on_id = -1;
+	queue = NULL;
+	undo_bitmaps = NULL;
+	undo_rects = NULL;
+	undo_bitmap_count = 0;
+
+	size_has_changed = FALSE;
+
+	layer_name = name;
+	visibility = visible;
+	blend_mode = mode;
 }
 
 
@@ -137,7 +172,9 @@ UndoAction::~UndoAction()
 	delete manipulator_settings;
 }
 
-status_t UndoAction::StoreUndo(BBitmap *bitmap)
+
+status_t
+UndoAction::StoreUndo(BBitmap *bitmap)
 {
 	bool success = FALSE;
 	int32 tries = 0;
@@ -146,20 +183,26 @@ status_t UndoAction::StoreUndo(BBitmap *bitmap)
 			if (queue == NULL) {
 				return B_ERROR;
 			}
-			if ((type == CHANGE_LAYER_CONTENT_ACTION) || (type == TOOL_ACTION) || (type == CLEAR_LAYER_ACTION) || (type == MERGE_LAYER_ACTION)) {
-				BBitmap *spare_bitmap = queue->ReturnLayerSpareBitmap(layer_id,bitmap);
-				StoreDifferences(spare_bitmap,bitmap,bounding_rect);
+			if ((type == CHANGE_LAYER_CONTENT_ACTION) || (type == TOOL_ACTION) ||
+				(type == CLEAR_LAYER_ACTION) || (type == MERGE_LAYER_ACTION) ||
+				(type == CHANGE_LAYER_PROPERTY_ACTION)) {
+				BBitmap *spare_bitmap = queue->ReturnLayerSpareBitmap(layer_id, bitmap);
+				StoreDifferences(spare_bitmap, bitmap, bounding_rect);
 				if (undo_bitmap_count == 0)
 					type = NO_ACTION;
 			}
+			else if (type == CHANGE_LAYER_PROPERTY_ACTION) {
+				BBitmap *spare_bitmap = queue->ReturnLayerSpareBitmap(layer_id, bitmap);
+				StoreDifferences(spare_bitmap, bitmap, bounding_rect);
+			}
 			else if (type == ADD_LAYER_ACTION) {
-				queue->ChangeLayerSpareBitmap(layer_id,bitmap);
+				queue->ChangeLayerSpareBitmap(layer_id, bitmap);
 				bounding_rect = bitmap->Bounds();
 			}
 			else if (type == DELETE_LAYER_ACTION) {
 				// Store the last version of layer's bitmap here
-				BBitmap *layer_bitmap = queue->ReturnLayerSpareBitmap(layer_id,NULL);
-				queue->ChangeLayerSpareBitmap(layer_id,NULL);
+				BBitmap *layer_bitmap = queue->ReturnLayerSpareBitmap(layer_id, NULL);
+				queue->ChangeLayerSpareBitmap(layer_id, NULL);
 				if (layer_bitmap != NULL) {
 					undo_bitmaps = new BBitmap*[1];
 					undo_rects = new BRect[1];
@@ -209,13 +252,15 @@ status_t UndoAction::StoreUndo(BBitmap *bitmap)
 }
 
 
-BBitmap* UndoAction::ApplyUndo(BBitmap *bitmap,BRect &updated_rect)
+BBitmap*
+UndoAction::ApplyUndo(BBitmap *bitmap,BRect &updated_rect)
 {
 	try {
 		if (queue == NULL)
 			return NULL;
 
-		if ((type == CHANGE_LAYER_CONTENT_ACTION) || (type == TOOL_ACTION) || (type == CLEAR_LAYER_ACTION) || (type == MERGE_LAYER_ACTION)) {
+		if ((type == CHANGE_LAYER_CONTENT_ACTION) || (type == TOOL_ACTION) ||
+			(type == CLEAR_LAYER_ACTION) || (type == MERGE_LAYER_ACTION)) {
 			if (undo_bitmaps == NULL)
 				return NULL;
 
@@ -330,8 +375,8 @@ BBitmap* UndoAction::ApplyUndo(BBitmap *bitmap,BRect &updated_rect)
 }
 
 
-
-void UndoAction::StoreDifferences(BBitmap *old, BBitmap *current, BRect area)
+void
+UndoAction::StoreDifferences(BBitmap *old, BBitmap *current, BRect area)
 {
 	try {
 		area.left = floor(area.left);
@@ -441,8 +486,8 @@ void UndoAction::StoreDifferences(BBitmap *old, BBitmap *current, BRect area)
 }
 
 
-
-BRect UndoAction::RestoreDifference(BBitmap *bitmap1,BBitmap *bitmap2)
+BRect
+UndoAction::RestoreDifference(BBitmap *bitmap1,BBitmap *bitmap2)
 {
 	BRect bitmap_rect;
 	BRect bounds = bitmap1->Bounds();
@@ -487,4 +532,13 @@ BRect UndoAction::RestoreDifference(BBitmap *bitmap1,BBitmap *bitmap2)
 
 	updated_rect = updated_rect & bounds;
 	return updated_rect;
+}
+
+
+void
+UndoAction::GetLayerMetadata(BString& name, bool& visible,  uint8& mode)
+{
+	name = layer_name;
+	visible = visibility;
+	mode = blend_mode;
 }

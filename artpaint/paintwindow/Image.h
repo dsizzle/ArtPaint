@@ -121,7 +121,8 @@ bool		DuplicateLayer(Layer*,int32);
 bool		MergeLayers(Layer*,int32,bool merge_with_upper);
 bool		RemoveLayer(Layer*,int32);
 bool		ToggleLayerVisibility(Layer*,int32);
-
+bool		SetLayerTransparency(Layer*, int32, float);
+bool		SetLayerBlendMode(Layer*, int32, uint8);
 
 Layer*		ReturnUpperLayer(Layer*);
 Layer*		ReturnLowerLayer(Layer*);

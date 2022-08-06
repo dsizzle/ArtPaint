@@ -367,11 +367,33 @@ void ImageView::MessageReceived(BMessage *message)
 			}
 		}	break;
 
-		case HS_LAYER_TRANSPARENCY_CHANGED:
-		case HS_LAYER_BLEND_MODE_CHANGED:
-			the_image->Render();
+		case HS_LAYER_TRANSPARENCY_CHANGED: {
+			int32 changed_layer_id;
+			Layer *changed_layer;
+			float transparency;
+
+			message->FindInt32("layer_id",&changed_layer_id);
+			message->FindPointer("layer_pointer",(void**)&changed_layer);
+			message->FindFloat("transparency", &transparency);
+
+			the_image->SetLayerTransparency(changed_layer, changed_layer_id,
+				transparency);
 			Invalidate();
-			break;
+		} break;
+
+		case HS_LAYER_BLEND_MODE_CHANGED: {
+			int32 changed_layer_id;
+			Layer *changed_layer;
+			uint8 blend_mode;
+
+			message->FindInt32("layer_id",&changed_layer_id);
+			message->FindPointer("layer_pointer",(void**)&changed_layer);
+			message->FindUInt8("blend_mode", &blend_mode);
+
+			the_image->SetLayerBlendMode(changed_layer, changed_layer_id,
+				blend_mode);
+			Invalidate();
+		}	break;
 
 		// This comes from layer's view and tells us to change the visibility for that layer.
 		case HS_LAYER_VISIBILITY_CHANGED:

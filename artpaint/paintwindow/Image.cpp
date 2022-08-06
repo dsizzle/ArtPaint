@@ -724,6 +724,74 @@ Image::ToggleLayerVisibility(Layer *toggled_layer, int32)
 }
 
 
+bool
+Image::SetLayerTransparency(Layer* changed_layer, int32 changed_layer_id,
+	float transparency)
+{
+	UndoEvent *new_event = undo_queue->AddUndoEvent(
+		B_TRANSLATE("Change layer transparency"),
+		ReturnThumbnailImage());
+
+	if (new_event != NULL) {
+		for (int32 i = 0;i < layer_list->CountItems(); i++) {
+			Layer *layer = (Layer*)layer_list->ItemAt(i);
+			UndoAction *new_action;
+			if (layer->Id() != changed_layer_id)
+				new_action = new UndoAction(layer->Id());
+			else {
+				new_action = new UndoAction(layer->Id(),
+					layer->ReturnLayerName(),
+					layer->IsVisible(),
+					layer->GetBlendMode(),
+					layer->Bitmap()->Bounds());
+			}
+			new_event->AddAction(new_action);
+			new_action->StoreUndo(layer->Bitmap());
+		}
+	}
+
+	changed_layer->SetTransparency(transparency);
+
+	Render();
+
+	return true;
+}
+
+
+bool
+Image::SetLayerBlendMode(Layer* changed_layer, int32 changed_layer_id,
+	uint8 blend_mode)
+{
+	UndoEvent *new_event = undo_queue->AddUndoEvent(
+		B_TRANSLATE("Change layer blend mode"),
+		ReturnThumbnailImage());
+
+	if (new_event != NULL) {
+		for (int32 i = 0;i < layer_list->CountItems(); i++) {
+			Layer *layer = (Layer*)layer_list->ItemAt(i);
+			UndoAction *new_action;
+			if (layer->Id() != changed_layer_id)
+				new_action = new UndoAction(layer->Id());
+			else {
+				new_action = new UndoAction(layer->Id(),
+					layer->ReturnLayerName(),
+					layer->IsVisible(),
+					layer->GetBlendMode(),
+					layer->Bitmap()->Bounds());
+			}
+			new_event->AddAction(new_action);
+			new_action->StoreUndo(layer->Bitmap());
+		}
+	}
+
+	changed_layer->SetBlendMode(blend_mode);
+
+	Render();
+
+	return true;
+}
+
+
 Layer*
 Image::ReturnLowerLayer(Layer *l)
 {
@@ -817,6 +885,19 @@ Image::UpdateImageStructure(UndoEvent *event)
 		updated_rect.right = max_c(updated_rect.right, a_rect.right);
 		updated_rect.top = min_c(updated_rect.top, a_rect.top);
 		updated_rect.bottom = max_c(updated_rect.bottom, a_rect.bottom);
+
+		if (actions[i]->Type() == CHANGE_LAYER_PROPERTY_ACTION) {
+			BString name;
+			bool visible;
+			uint8 mode;
+
+			actions[i]->GetLayerMetadata(name, visible, mode);
+
+			layer->SetName(name);
+			layer->SetVisibility(visible);
+			layer->SetBlendMode(mode);
+		}
+
 	}
 	// Here we copy the layers back to layer list
 	for (int32 i = 0;i < event->ActionCount();i++) {

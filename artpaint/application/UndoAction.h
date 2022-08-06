@@ -27,7 +27,8 @@ enum action_type {
 	DELETE_LAYER_ACTION,
 	CLEAR_LAYER_ACTION,
 	CHANGE_LAYER_CONTENT_ACTION,
-	MERGE_LAYER_ACTION
+	MERGE_LAYER_ACTION,
+	CHANGE_LAYER_PROPERTY_ACTION
 };
 
 
@@ -46,6 +47,9 @@ class UndoAction {
 	int32				merged_layer_id;
 	action_type			type;
 
+	BString				layer_name;
+	bool				visibility;
+	uint8				blend_mode;
 
 	ToolScript			*tool_script;
 	ManipulatorSettings	*manipulator_settings;
@@ -68,10 +72,16 @@ class UndoAction {
 
 
 public:
-	UndoAction(int32 layer,action_type t=NO_ACTION,BRect rect=BRect(0,0,-1,-1));
-	UndoAction(int32 layer,int32 merged_layer,BRect rect=BRect(0,0,-1,-1));
-	UndoAction(int32 layer,ToolScript *script,BRect rect);
-	UndoAction(int32 layer,ManipulatorSettings*,BRect rect,manipulator_type type,int32 aoid=-1);
+	UndoAction(int32 layer, action_type t = NO_ACTION,
+		BRect rect = BRect(0, 0, -1, -1));
+	UndoAction(int32 layer, int32 merged_layer,
+		BRect rect = BRect(0, 0, -1, -1));
+	UndoAction(int32 layer, ToolScript *script,
+		BRect rect);
+	UndoAction(int32 layer, ManipulatorSettings*,
+		BRect rect, manipulator_type type, int32 aoid = -1);
+	UndoAction(int32 layer, BString name, bool visible, uint8 mode,
+		BRect rect);
 
 	~UndoAction();
 
@@ -84,6 +94,10 @@ void		SetQueue(UndoQueue *q) { queue = q; }
 
 int32		LayerId() { return layer_id; }
 bool		IsEmpty() { return type == NO_ACTION; }
+action_type Type() { return type; }
+
+void		GetLayerMetadata(BString& name, bool& visible,
+				uint8& mode);
 };
 
 
