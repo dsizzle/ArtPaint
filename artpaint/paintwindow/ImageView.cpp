@@ -2348,7 +2348,7 @@ ImageView::PostponeMessageAndFinishManipulator()
 {
 	if (fManipulator) {
 		BMessage message(HS_MANIPULATOR_FINISHED);
-		message.AddBool("status", true);
+		message.AddBool("status", false);
 		Window()->PostMessage(&message, this);
 
 		manipulator_finishing_message = Window()->DetachCurrentMessage();
